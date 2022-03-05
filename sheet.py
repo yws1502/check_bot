@@ -1,18 +1,28 @@
+from dotenv import load_dotenv
 from utility import get_date
-import gspread
+import gspread, os
+
+
+load_dotenv()
+
+DOCUMENT = os.getenv('DOCUMENT')
+SHEET = os.getenv('SHEET')
 
 gc = gspread.service_account(filename='key.json')
-doc = gc.open('test')
-worksheet = doc.worksheet("시트1")
+doc = gc.open(DOCUMENT)
+worksheet = doc.worksheet(SHEET)
 week = ["월", "화", "수", "목", "금", "토", "일"]
 
 
 def check_sheet(user, limit_hour, limit_min, plan=False):
     month, day, weekday, hour, min = get_date()
 
+    if weekday in [5, 6]:
+        return
+
     col = worksheet.find(user).col
     row = worksheet.find(f"{month}.{day}({week[weekday]})").row
-    row = row if plan == False else row - 1
+    row = row + 1 if plan else row
 
     if (limit_hour >= hour) and (limit_min >= min):
         worksheet.update_cell(row, col, "O")

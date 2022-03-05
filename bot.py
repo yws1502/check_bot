@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from utility import check_time
+from sheet import check_sheet
 import time, os
 
 from discord.ext import tasks
@@ -25,10 +26,7 @@ async def every_hour_notice():
     current_channel = client.get_guild(GUILD_ID).get_channel(CHANNEL_ID)
     # 주말인 경우는 제외
     if check_time(9, 15) and len(MEMBERS) != len(WAKE_UP):
-        wake_up_info = ""
-        for member in MEMBERS:
-            if member not in WAKE_UP:
-                wake_up_info += f"{member.mention}"
+        wake_up_info = " ".join([f"{member.mention}" for member in MEMBERS if member not in WAKE_UP])
         wake_up_info += "일어나세요"
         await current_channel.send(wake_up_info)
     elif check_time(9, 20) and len(MEMBERS) != len(WAKE_UP):
@@ -63,8 +61,7 @@ async def on_message(message):
         return
     elif message.content.startswith('기상'):
         WAKE_UP.append(message.author)
-
-    await message.channel.send("잘했어")
+        check_sheet(message.author.name, 9, 20)
 
 
 client.run(TOKEN)

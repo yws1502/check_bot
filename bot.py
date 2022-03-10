@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
-from utility import check_time
+from utility import compare_time
 from sheet import check_sheet
-from timeVariable import MORNING_ALARM, MORNING_TIME_LIMIT, PLAN_ALARM, PLAN_TIME_LIMIT
 import os
 
 from discord.ext import tasks
@@ -20,6 +19,12 @@ intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
 
+MORNING_ALARM = [9, 10]
+MORNING_TIME_LIMIT = [9, 21]
+
+PLAN_ALARM = [11, 50]
+PLAN_TIME_LIMIT = [12, 1]
+
 WAKE_UP_MEMBERS = []
 DAILY_PLAN_MEMBERS = []
 MEMBERS = []
@@ -30,31 +35,29 @@ def send_msg_generator(group_mode, extra_msg):
     return send_msg
 
 
-def time_out(group_mode, limit_time, plan=False):
-    fail_members = list(filter(lambda member: member not in group_mode, MEMBERS))
-    for fail_member in fail_members:
-        check_sheet(fail_member.name, *limit_time, plan)
+async def check_member(channel, success_members, alarm, time_limit, msg):
+    if len(MEMBERS) != len(success_members):
+        if compare_time(*alarm):
+            print('alarm')
+            send_msg = send_msg_generator(success_members, msg)
+            await channel.send(send_msg)
+
+        elif compare_time(*time_limit):
+            print('time out')
+            fail_members = list(filter(lambda member: member not in success_members, MEMBERS))
+            for fail_member in fail_members:
+                is_plan = True if time_limit == PLAN_TIME_LIMIT else False
+                check_sheet(fail_member.name, *time_limit, plan=is_plan, fail=True)
+            success_members.clear()
 
 
 @tasks.loop(minutes=1)
 async def every_hour_notice():
     wake_up_channel = client.get_guild(GUILD_ID).get_channel(WAKE_UP_CHANNEL_ID)
     daily_channel = client.get_guild(GUILD_ID).get_channel(DAILY_CHANNEL_ID)
-    # 기상 미션
-    if check_time(*MORNING_ALARM) and len(MEMBERS) != len(WAKE_UP_MEMBERS):
-        msg = send_msg_generator(WAKE_UP_MEMBERS, "일어나세요")
-        await wake_up_channel.send(msg)
-    elif check_time(*MORNING_TIME_LIMIT) and len(MEMBERS) != len(WAKE_UP_MEMBERS):
-        time_out(WAKE_UP_MEMBERS, MORNING_TIME_LIMIT, True)
-        WAKE_UP_MEMBERS.clear()
-
-    # 일일 계획
-    elif check_time(*PLAN_ALARM) and len(MEMBERS) != len(DAILY_PLAN_MEMBERS):
-        msg = send_msg_generator(DAILY_PLAN_MEMBERS, "일일계획 작성 부탁드립니다 : )")
-        await daily_channel.send(msg)
-    elif check_time(*PLAN_TIME_LIMIT) and len(MEMBERS) != len(DAILY_PLAN_MEMBERS):
-        time_out(DAILY_PLAN_MEMBERS, PLAN_TIME_LIMIT)
-        DAILY_PLAN_MEMBERS.clear()
+    
+    await check_member(wake_up_channel, WAKE_UP_MEMBERS, MORNING_ALARM, MORNING_TIME_LIMIT, "일어나세요")
+    await check_member(daily_channel, DAILY_PLAN_MEMBERS, PLAN_ALARM, PLAN_TIME_LIMIT, "일일계획 작성 부탁드립니다 : )")
 
 
 @client.event
@@ -84,11 +87,11 @@ async def on_message(message):
     elif message.content.startswith('기상'):
         WAKE_UP_MEMBERS.append(message.author)
         check_sheet(message.author.name, *MORNING_TIME_LIMIT)
-        print(WAKE_UP_MEMBERS)
+        print("기상 멤버 :", WAKE_UP_MEMBERS)
     elif message.content.startswith("일일"):
         DAILY_PLAN_MEMBERS.append(message.author)
         check_sheet(message.author.name, *PLAN_TIME_LIMIT, plan=True)
-        print(DAILY_PLAN_MEMBERS)
+        print("계획 짠 멤버 :", DAILY_PLAN_MEMBERS)
 
 
 client.run(TOKEN)

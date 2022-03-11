@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from utility import compare_time
 from sheet import check_sheet
 import os
@@ -7,13 +6,11 @@ from discord.ext import tasks
 import discord
 
 
-load_dotenv()
-
-TOKEN = os.getenv('DISCORD_TOKEN')
-GUILD = os.getenv('DISCORD_GUILD')
-GUILD_ID = int(os.getenv('GUILD_ID'))
-WAKE_UP_CHANNEL_ID = int(os.getenv('WAKE_UP_CHANNEL_ID'))
-DAILY_CHANNEL_ID = int(os.getenv('DAILY_CHANNEL_ID'))
+TOKEN = os.environ.get('DISCORD_TOKEN')
+GUILD = os.environ.get('DISCORD_GUILD')
+GUILD_ID = int(os.environ.get('GUILD_ID'))
+WAKE_UP_CHANNEL_ID = int(os.environ.get('WAKE_UP_CHANNEL_ID'))
+DAILY_CHANNEL_ID = int(os.environ.get('DAILY_CHANNEL_ID'))
 
 intents = discord.Intents.default()
 intents.members = True

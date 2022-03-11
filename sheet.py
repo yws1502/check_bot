@@ -1,12 +1,12 @@
 from dotenv import load_dotenv
 from utility import get_date
-import gspread, os
+import gspread
 
 
 load_dotenv()
 
-DOCUMENT = os.getenv('DOCUMENT')
-SHEET = os.getenv('SHEET')
+DOCUMENT = "test2"
+SHEET = "Sheet1"
 
 gc = gspread.service_account(filename='key.json')
 doc = gc.open(DOCUMENT)
@@ -24,8 +24,10 @@ def check_sheet(user, limit_hour, limit_min, plan=False, fail=False):
     row = worksheet.find(f"{month}.{day}({week[weekday]})").row
     row = row + 1 if plan else row
 
-    if fail == False or ((limit_hour > hour) and (limit_min > min)):
+    if plan == True or ((limit_hour > hour) and (limit_min > min)):
         worksheet.update_cell(row, col, "O")
+    elif fail == True:
+        worksheet.update_cell(row, col, "X")
     else:
         worksheet.update_cell(row, col, "X")
 

@@ -25,8 +25,8 @@ MORNING_TIME_LIMIT = [0, 21]
 PLAN_ALARM = [2, 50]
 PLAN_TIME_LIMIT = [3, 1]
 
-WAKE_UP_MEMBERS = []
-DAILY_PLAN_MEMBERS = []
+WAKE_UP_MEMBERS = set()
+DAILY_PLAN_MEMBERS = set()
 MEMBERS = []
 
 def send_msg_generator(success_members, extra_msg):
@@ -85,11 +85,11 @@ async def on_message(message):
     if message.author == client.user:
         return
     elif message.content.startswith('!기상'):
-        WAKE_UP_MEMBERS.append(message.author)
+        WAKE_UP_MEMBERS.add(message.author)
         check_sheet(message.author.name, *MORNING_TIME_LIMIT)
         print("기상 멤버 :", WAKE_UP_MEMBERS)
     elif message.content.startswith("!일일"):
-        DAILY_PLAN_MEMBERS.append(message.author)
+        DAILY_PLAN_MEMBERS.add(message.author)
         check_sheet(message.author.name, *PLAN_TIME_LIMIT, plan=True)
         print("계획 짠 멤버 :", DAILY_PLAN_MEMBERS)
 

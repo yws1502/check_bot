@@ -24,10 +24,17 @@ def check_sheet(user, limit_hour, limit_min, plan=False, fail=False):
     row = worksheet.find(f"{month}.{day}({week[weekday]})").row
     row = row + 1 if plan else row
 
-    if plan == True or ((limit_hour > hour) and (limit_min > min)):
-        worksheet.update_cell(row, col, "O")
-    elif fail == True:
-        worksheet.update_cell(row, col, "X")
-    else:
-        worksheet.update_cell(row, col, "X")
 
+    if type(worksheet.cell(row, col).value) == type(None):
+        if fail:
+            worksheet.update_cell(row, col, "X")
+        elif plan or ((limit_hour >= hour) and (limit_min >= min)):
+            worksheet.update_cell(row, col, "O")
+        else:
+            worksheet.update_cell(row, col, "X")
+    elif type(worksheet.cell(row, col).value) == type("string") and plan:
+        if weekday < 4:
+            row += 2
+        elif weekday == 6:
+            row += 3
+        worksheet.update_cell(row, col, "O")

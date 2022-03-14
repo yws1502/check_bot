@@ -1,33 +1,36 @@
 from utility import compare_time
 from sheet import check_sheet
+from dotenv import load_dotenv
 import os
 
 from discord.ext import tasks
 import discord
 
 
-TOKEN = os.environ.get('DISCORD_TOKEN')
-GUILD = os.environ.get('DISCORD_GUILD')
-GUILD_ID = int(os.environ.get('GUILD_ID'))
-WAKE_UP_CHANNEL_ID = int(os.environ.get('WAKE_UP_CHANNEL_ID'))
-DAILY_CHANNEL_ID = int(os.environ.get('DAILY_CHANNEL_ID'))
+load_dotenv()
+
+TOKEN = os.getenv('DISCORD_TOKEN')
+GUILD = os.getenv('DISCORD_GUILD')
+GUILD_ID = int(os.getenv('GUILD_ID'))
+WAKE_UP_CHANNEL_ID = int(os.getenv('WAKE_UP_CHANNEL_ID'))
+DAILY_CHANNEL_ID = int(os.getenv('DAILY_CHANNEL_ID'))
 
 intents = discord.Intents.default()
 intents.members = True
 client = discord.Client(intents=intents)
 
-MORNING_ALARM = [9, 10]
-MORNING_TIME_LIMIT = [9, 21]
+MORNING_ALARM = [0, 10]
+MORNING_TIME_LIMIT = [0, 21]
 
-PLAN_ALARM = [11, 50]
-PLAN_TIME_LIMIT = [12, 1]
+PLAN_ALARM = [2, 50]
+PLAN_TIME_LIMIT = [3, 1]
 
 WAKE_UP_MEMBERS = []
 DAILY_PLAN_MEMBERS = []
 MEMBERS = []
 
-def send_msg_generator(group_mode, extra_msg):
-    send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in group_mode])
+def send_msg_generator(success_members, extra_msg):
+    send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in success_members])
     send_msg += extra_msg
     return send_msg
 
@@ -81,11 +84,11 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    elif message.content.startswith('기상'):
+    elif message.content.startswith('!기상'):
         WAKE_UP_MEMBERS.append(message.author)
         check_sheet(message.author.name, *MORNING_TIME_LIMIT)
         print("기상 멤버 :", WAKE_UP_MEMBERS)
-    elif message.content.startswith("일일"):
+    elif message.content.startswith("!일일"):
         DAILY_PLAN_MEMBERS.append(message.author)
         check_sheet(message.author.name, *PLAN_TIME_LIMIT, plan=True)
         print("계획 짠 멤버 :", DAILY_PLAN_MEMBERS)

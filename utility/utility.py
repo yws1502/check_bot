@@ -45,3 +45,13 @@ def has_value_at_cell(col:int, row:int) -> bool:
     if type(WORKSHEET.cell(row, col).value) == type(None):
         return False
     return True
+
+def check_members(members:object, plan:bool=False) -> List[object]:
+    """구글 시트에 체크되지 않은 사람들 확인하는 함수"""
+    fail_members = []
+    for member in members:
+        col, row = get_cell_location(member.name, plan)
+        if has_value_at_cell(col, row) == False:
+            fail_members.append(member)
+
+    return fail_members

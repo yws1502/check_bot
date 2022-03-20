@@ -6,29 +6,28 @@ from discord.ext import tasks
 import discord
 
 
-def send_msg_generator(success_members:List[str], extra_msg:str) -> str:
+def send_msg_generator(fail_members:List[str], extra_msg:str) -> str:
     """인증 못한 분들을 태그한 텍스트 생성 함수"""
-    send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in success_members])
+    send_msg = " ".join([f"{member.mention}" for member in fail_members])
     send_msg += extra_msg
     return send_msg
 
 
-async def alarm(channel:object, success_members:List[str], msg:str) -> None:
+async def alarm(channel:object, fail_members:List[str], msg:str) -> None:
     """인증 못한 사람들 알려주는 메시지 보내기 함수 """
-    if len(MEMBERS) != len(success_members):
-        send_msg = send_msg_generator(success_members, msg)
+    if len(fail_members) != 0:
+        send_msg = send_msg_generator(fail_members, msg)
         await channel.send(send_msg)
 
 
-async def time_out(channel:object, success_members:List[str], plan:bool=False) -> None:
+async def time_out(channel:object, fail_members:List[str], plan:bool=False) -> None:
     month, day, _, _, _ = get_date()
-    fail_members = list(filter(lambda member: member not in success_members, MEMBERS))
 
+    success_count = len(MEMBERS) - len(fail_members)
     for fail_member in fail_members:
         col, row = get_cell_location(fail_member.name, plan)
         WORKSHEET.update_cell(row, col, "X")
-    await channel.send(f"---------{month}월{day}일 {len(success_members)}/{len(MEMBER_NAMES)} 완료---------")
-    success_members.clear()
+    await channel.send(f"---------{month}월{day}일 {success_count}/{len(MEMBER_NAMES)} 완료---------")
 
 
 if __name__ == "__main__":
@@ -46,16 +45,20 @@ if __name__ == "__main__":
 
         if compare_time(*MORNING_ALARM):
             print("기상 알람")
-            await alarm(wake_up_channel, WAKE_UP_MEMBERS, "일어나세요!!🙈")
+            fail_members = check_members(MEMBERS)
+            await alarm(wake_up_channel, fail_members, "일어나세요!!🙈")
         elif compare_time(*PLAN_ALARM):
             print("일일 계획 알람")
-            await alarm(daily_channel, DAILY_PLAN_MEMBERS, "일일계획 작성 부탁드립니다 🖍")
+            fail_members = check_members(MEMBERS, True)
+            await alarm(daily_channel, fail_members, "일일계획 작성 부탁드립니다 ✏")
         elif compare_time(*MORNING_TIME_LIMIT):
             print("기상 미션 체크")
-            await time_out(wake_up_channel, WAKE_UP_MEMBERS)
+            fail_members = check_members(MEMBERS)
+            await time_out(wake_up_channel, fail_members)
         elif compare_time(*PLAN_TIME_LIMIT):
             print("일일 계획 체크")
-            await time_out(daily_channel, DAILY_PLAN_MEMBERS, True)
+            fail_members = check_members(MEMBERS, True)
+            await time_out(daily_channel, fail_members, True)
 
 
     @client.event
@@ -85,7 +88,9 @@ if __name__ == "__main__":
 
         if message.content.startswith("!일일"):
             col, row = get_cell_location(message.author.name, True)
-            if has_value_at_cell(col, row) == True:
+            if hour < 17:
+                return
+            elif has_value_at_cell(col, row) == True:
                 # 내일 계획 미리 세우는 경우
                 row += 2
             elif weekday == 6:

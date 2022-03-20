@@ -112,4 +112,13 @@ if __name__ == "__main__":
 
             await message.channel.send(msg)
 
+        elif message.content.startswith("!휴식"):
+            col, row = get_cell_location(message.author.name)
+            WORKSHEET.update_cell(row+2, col, "-")
+            WORKSHEET.update_cell(row+3, col, "-")
+            DAILY_PLAN_MEMBERS.add(message.author)
+            WAKE_UP_MEMBERS.add(message.author)
+            await message.channel.send("🔋")
+
+
     client.run(TOKEN)

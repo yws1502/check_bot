@@ -5,16 +5,14 @@ from discord.ext import tasks
 import discord
 
 
-def check_sheet(user, limit_hour, limit_min, plan=False, fail=False):
-    month, day, weekday, hour, min = get_date()
+def check_sheet(username, limit_hour, limit_min, plan=False, fail=False):
+    _, _, weekday, hour, min = get_date()
 
     if weekday in [5, 6]:
         return
 
+    col, row = get_cell_location(username, plan)
 
-    col = WORKSHEET.find(MEMBER_NAMES[user]).col
-    row = WORKSHEET.find(f"{month}.{day}({WEEK[weekday]})").row
-    row = row + 1 if plan else row
 
     if type(WORKSHEET.cell(row, col).value) == type(None):
         if fail:

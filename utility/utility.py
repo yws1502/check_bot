@@ -16,3 +16,16 @@ def get_date():
     min = current_time.minute
 
     return [month, day, weekday, hour, min]
+
+def get_cell_location(username, plan=False):
+    """
+    구글 시트에서 좌표 찾아주는 함수
+    return col, row
+    """
+    month, day, weekday, _, _ = get_date()
+
+    col = WORKSHEET.find(MEMBER_NAMES[username]).col
+    row = WORKSHEET.find(f"{month}.{day}({WEEK[weekday]})").row
+    row += 1 if plan == True else 0
+
+    return col, row

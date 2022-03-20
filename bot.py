@@ -6,34 +6,6 @@ from discord.ext import tasks
 import discord
 
 
-def check_sheet(username:str, limit_hour:int, limit_min:int, plan:bool=False, fail:bool=False) -> None:
-    """
-    해당 유저가 제 시간에 인증을 했는지 확인하여 구글 시트에 check해주는 함수 
-    """
-    _, _, weekday, hour, min = get_date()
-
-    if weekday in [5, 6]:
-        return
-
-    col, row = get_cell_location(username, plan)
-
-
-    if type(WORKSHEET.cell(row, col).value) == type(None):
-        if fail:
-            WORKSHEET.update_cell(row, col, "X")
-        elif plan or (limit_hour > hour) or ((limit_hour >= hour) and (limit_min >= min)):
-            WORKSHEET.update_cell(row, col, "O")
-        else:
-            WORKSHEET.update_cell(row, col, "X")
-    elif type(WORKSHEET.cell(row, col).value) == type("string") and plan:
-        if fail: return
-        if weekday < 4:
-            row += 2
-        elif weekday == 6:
-            row += 3
-        WORKSHEET.update_cell(row, col, "O")
-
-
 def send_msg_generator(success_members:List[str], extra_msg:str) -> str:
     """인증 못한 분들을 태그한 텍스트 생성 함수"""
     send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in success_members])
@@ -41,21 +13,22 @@ def send_msg_generator(success_members:List[str], extra_msg:str) -> str:
     return send_msg
 
 
-async def check_member(channel:object, success_members:List[str], alarm:List[int], time_limit:List[int], msg:str) -> None:
-    """인증 마감 시간에 인증 못한 분들 구글 시트에 체크하는 함수"""
+async def alarm(channel:object, success_members:List[str], msg:str) -> None:
+    """인증 못한 사람들 알려주는 메시지 보내기 함수 """
     if len(MEMBERS) != len(success_members):
-        if compare_time(*alarm):
-            print('alarm')
-            send_msg = send_msg_generator(success_members, msg)
-            await channel.send(send_msg)
+        send_msg = send_msg_generator(success_members, msg)
+        await channel.send(send_msg)
 
-        elif compare_time(*time_limit):
-            print('time out')
-            fail_members = list(filter(lambda member: member not in success_members, MEMBERS))
-            for fail_member in fail_members:
-                is_plan = True if time_limit == PLAN_TIME_LIMIT else False
-                check_sheet(fail_member.name, *time_limit, plan=is_plan, fail=True)
-            success_members.clear()
+
+async def time_out(channel:object, success_members:List[str], plan:bool=False) -> None:
+    month, day, _, _, _ = get_date()
+    fail_members = list(filter(lambda member: member not in success_members, MEMBERS))
+
+    for fail_member in fail_members:
+        col, row = get_cell_location(fail_member.name, plan)
+        WORKSHEET.update_cell(row, col, "X")
+    await channel.send(f"---------{month}월{day}일 {len(success_members)}/{len(MEMBER_NAMES)} 완료---------")
+    success_members.clear()
 
 
 if __name__ == "__main__":
@@ -64,12 +37,25 @@ if __name__ == "__main__":
     client = discord.Client(intents=intents)
 
     @tasks.loop(minutes=1)
-    async def every_hour_notice():
+    async def every_notice():
+        _, _, weekday, _, _ = get_date()
+        if weekday in [5, 6]: return
+
         wake_up_channel = client.get_guild(GUILD_ID).get_channel(WAKE_UP_CHANNEL_ID)
         daily_channel = client.get_guild(GUILD_ID).get_channel(DAILY_CHANNEL_ID)
-        
-        await check_member(wake_up_channel, WAKE_UP_MEMBERS, MORNING_ALARM, MORNING_TIME_LIMIT, "일어나세요")
-        await check_member(daily_channel, DAILY_PLAN_MEMBERS, PLAN_ALARM, PLAN_TIME_LIMIT, "일일계획 작성 부탁드립니다 : )")
+
+        if compare_time(*MORNING_ALARM):
+            print("기상 알람")
+            await alarm(wake_up_channel, WAKE_UP_MEMBERS, "일어나세요!!🙈")
+        elif compare_time(*PLAN_ALARM):
+            print("일일 계획 알람")
+            await alarm(daily_channel, DAILY_PLAN_MEMBERS, "일일계획 작성 부탁드립니다 🖍")
+        elif compare_time(*MORNING_TIME_LIMIT):
+            print("기상 미션 체크")
+            await time_out(wake_up_channel, WAKE_UP_MEMBERS)
+        elif compare_time(*PLAN_TIME_LIMIT):
+            print("일일 계획 체크")
+            await time_out(daily_channel, DAILY_PLAN_MEMBERS, True)
 
 
     @client.event
@@ -89,7 +75,7 @@ if __name__ == "__main__":
         for member in MEMBERS:
             print(f'- {member.name}')
 
-        every_hour_notice.start()
+        every_notice.start()
 
 
     @client.event
@@ -108,7 +94,7 @@ if __name__ == "__main__":
 
             DAILY_PLAN_MEMBERS.add(message.author)
             WORKSHEET.update_cell(row, col, "O")
-            await message.channel.send("일일계획 확인되었습니다. 화이텡! : )")
+            await message.channel.send("일일계획 확인되었습니다. 📚")
 
         elif message.content.startswith('!기상'):
             col, row = get_cell_location(message.author.name)
@@ -118,11 +104,11 @@ if __name__ == "__main__":
                 # 제한 시간안에 인증한 경우
                 WAKE_UP_MEMBERS.add(message.author)
                 WORKSHEET.update_cell(row, col, "O")
-                msg = "기상 확인되었습니다. 오늘도 화이텡! : )"
+                msg = "기상 확인되었습니다. 오늘도 화이텡! 💪"
             else:
                 # 제한 시간 지난 경우
                 WORKSHEET.update_cell(row, col, "X")
-                msg = "내일은 꼭!!"
+                msg = "내일은 꼭!! 😭"
 
             await message.channel.send(msg)
 

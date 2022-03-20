@@ -113,14 +113,31 @@ if __name__ == "__main__":
             else:
                 # 제한 시간 지난 경우
                 WORKSHEET.update_cell(row, col, "X")
+                location = f"{chr(col+64)}{row}"
+                format = {
+                    "textFormat": {
+                        "bold": True,
+                        "foregroundColor": {"red":1, "green": 0.4274, "blue": 0.0039}
+                    }
+                }
+                WORKSHEET.format(location, format)
                 msg = "내일은 꼭!! 😭"
 
             await message.channel.send(msg)
 
         elif message.content.startswith("!휴식"):
             col, row = get_cell_location(message.author.name)
-            WORKSHEET.update_cell(row+2, col, "-")
-            WORKSHEET.update_cell(row+3, col, "-")
+            location_wake = f"{chr(col+64)}{row+2}"
+            location_plan = f"{chr(col+64)}{row+3}"
+
+            format = {
+                "backgroundColor": {"red":0.8509, "green":0.8509, "blue":0.8509}
+            }
+            WORKSHEET.update(location_wake, "-")
+            WORKSHEET.update(location_plan, "-")
+            WORKSHEET.format(location_wake, format)
+            WORKSHEET.format(location_plan, format)
+
             DAILY_PLAN_MEMBERS.add(message.author)
             WAKE_UP_MEMBERS.add(message.author)
             await message.channel.send("🔋")

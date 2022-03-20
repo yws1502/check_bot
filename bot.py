@@ -1,11 +1,15 @@
 from constants.constants import *
 from utility.utility import *
+from typing import List
 
 from discord.ext import tasks
 import discord
 
 
-def check_sheet(username, limit_hour, limit_min, plan=False, fail=False):
+def check_sheet(username:str, limit_hour:int, limit_min:int, plan:bool=False, fail:bool=False) -> None:
+    """
+    해당 유저가 제 시간에 인증을 했는지 확인하여 구글 시트에 check해주는 함수 
+    """
     _, _, weekday, hour, min = get_date()
 
     if weekday in [5, 6]:
@@ -29,13 +33,16 @@ def check_sheet(username, limit_hour, limit_min, plan=False, fail=False):
             row += 3
         WORKSHEET.update_cell(row, col, "O")
 
-def send_msg_generator(group_mode, extra_msg):
-    send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in group_mode])
+
+def send_msg_generator(success_members:List[str], extra_msg:str) -> str:
+    """인증 못한 분들을 태그한 텍스트 생성 함수"""
+    send_msg = " ".join([f"{member.mention}" for member in MEMBERS if member not in success_members])
     send_msg += extra_msg
     return send_msg
 
 
-async def check_member(channel, success_members, alarm, time_limit, msg):
+async def check_member(channel:object, success_members:List[str], alarm:List[int], time_limit:List[int], msg:str) -> None:
+    """인증 마감 시간에 인증 못한 분들 구글 시트에 체크하는 함수"""
     if len(MEMBERS) != len(success_members):
         if compare_time(*alarm):
             print('alarm')

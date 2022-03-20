@@ -90,12 +90,9 @@ if __name__ == "__main__":
             col, row = get_cell_location(message.author.name, True)
             if (12 == hour and 11 < min) or (12 < hour < 17):
                 return
-            elif has_value_at_cell(col, row) == True:
-                # 내일 계획 미리 세우는 경우
+            elif weekday == 6 or has_value_at_cell(col, row) == True:
+                # 내일 계획 미리 세우는 경우 or 일요일날 계획 세운 경우
                 row += 2
-            elif weekday == 6:
-                # 일요일날 계획 세운 경우
-                row += 3
 
             DAILY_PLAN_MEMBERS.add(message.author)
             WORKSHEET.update_cell(row, col, "O")

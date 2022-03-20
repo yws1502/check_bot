@@ -34,3 +34,14 @@ def get_cell_location(username:str, plan:bool=False) -> List[int]:
     row += 1 if plan == True else 0
 
     return col, row
+
+def has_value_at_cell(col:int, row:int) -> bool:
+    """
+    해당 행에 값이 있는지 확인
+
+    셀에 값이 있는 경우 True
+    셀에 값이 없는 경우 False
+    """
+    if type(WORKSHEET.cell(row, col).value) == type(None):
+        return False
+    return True

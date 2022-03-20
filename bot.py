@@ -94,19 +94,36 @@ if __name__ == "__main__":
 
     @client.event
     async def on_message(message):
-        if message.author == client.user:
-            return
+        _, _, weekday, hour, min = get_date()
+        if message.author == client.user or weekday == 5: return
 
-        if message.content.startswith('!기상'):
-            WAKE_UP_MEMBERS.add(message.author)
-            check_sheet(message.author.name, *MORNING_TIME_LIMIT)
-            await message.channel.send("기상 확인되었습니다. 오늘도 화이텡! : )")
-            print("기상 멤버 :", WAKE_UP_MEMBERS)
-        elif message.content.startswith("!일일") or\
-            message.content.endswith("계획"):
+        if message.content.startswith("!일일"):
+            col, row = get_cell_location(message.author.name, True)
+            if has_value_at_cell(col, row) == True:
+                # 내일 계획 미리 세우는 경우
+                row += 2
+            elif weekday == 6:
+                # 일요일날 계획 세운 경우
+                row += 3
+
             DAILY_PLAN_MEMBERS.add(message.author)
-            check_sheet(message.author.name, *PLAN_TIME_LIMIT, plan=True)
+            WORKSHEET.update_cell(row, col, "O")
             await message.channel.send("일일계획 확인되었습니다. 화이텡! : )")
-            print("계획 짠 멤버 :", DAILY_PLAN_MEMBERS)
+
+        elif message.content.startswith('!기상'):
+            col, row = get_cell_location(message.author.name)
+            limit_hour, limit_min = MORNING_TIME_LIMIT
+
+            if limit_hour > hour or (limit_hour == hour and limit_min >= min):
+                # 제한 시간안에 인증한 경우
+                WAKE_UP_MEMBERS.add(message.author)
+                WORKSHEET.update_cell(row, col, "O")
+                msg = "기상 확인되었습니다. 오늘도 화이텡! : )"
+            else:
+                # 제한 시간 지난 경우
+                WORKSHEET.update_cell(row, col, "X")
+                msg = "내일은 꼭!!"
+
+            await message.channel.send(msg)
 
     client.run(TOKEN)

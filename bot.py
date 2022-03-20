@@ -88,7 +88,7 @@ if __name__ == "__main__":
 
         if message.content.startswith("!일일"):
             col, row = get_cell_location(message.author.name, True)
-            if hour < 17:
+            if (12 == hour and 11 < min) or (12 < hour < 17):
                 return
             elif has_value_at_cell(col, row) == True:
                 # 내일 계획 미리 세우는 경우

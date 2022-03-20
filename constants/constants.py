@@ -11,13 +11,12 @@ GUILD_ID = int(os.getenv('GUILD_ID'))
 WAKE_UP_CHANNEL_ID = int(os.getenv('WAKE_UP_CHANNEL_ID'))
 DAILY_CHANNEL_ID = int(os.getenv('DAILY_CHANNEL_ID'))
 
-
 # 시간 변수
-MORNING_ALARM = [0, 10]
-MORNING_TIME_LIMIT = [0, 21]
+MORNING_ALARM = [9, 10]
+MORNING_TIME_LIMIT = [9, 21]
 
-PLAN_ALARM = [2, 50]
-PLAN_TIME_LIMIT = [3, 1]
+PLAN_ALARM = [11, 50]
+PLAN_TIME_LIMIT = [12, 1]
 
 
 # 출석 확인 DB
@@ -27,8 +26,8 @@ MEMBERS = []
 
 
 # google sheet 관련
-document = "test2"
-sheet = "Sheet1"
+document = "3월 계피사탕"
+sheet = "3월 계피사탕"
 gc = gspread.service_account(filename='key.json')
 doc = gc.open(document)
 

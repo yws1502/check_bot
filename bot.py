@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     @tasks.loop(minutes=1)
     async def every_notice():
-        _, _, weekday, _, _ = get_date()
+        _, _, weekday, hour, min = get_date()
         if weekday in [5, 6]: return
 
         wake_up_channel = client.get_guild(GUILD_ID).get_channel(WAKE_UP_CHANNEL_ID)

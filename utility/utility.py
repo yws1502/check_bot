@@ -25,15 +25,20 @@ def get_date() -> List[int]:
 def get_cell_location(username:str, plan:bool=False) -> List[int]:
     """
     구글 시트에서 좌표 찾아주는 함수
-    return col, row
+    return col, row, success
     """
     month, day, weekday, _, _ = get_date()
+    success = True
+    try:
+        col = WORKSHEET.find(MEMBER_NAMES[username]).col
+    except:
+        col = len(MEMBER_NAMES) + 6
+        success = False
 
-    col = WORKSHEET.find(MEMBER_NAMES[username]).col
     row = WORKSHEET.find(f"{month}.{day}({WEEK[weekday]})").row
     row += 1 if plan == True else 0
 
-    return col, row
+    return col, row, success
 
 def has_value_at_cell(col:int, row:int) -> bool:
     """
@@ -46,11 +51,13 @@ def has_value_at_cell(col:int, row:int) -> bool:
         return False
     return True
 
-def check_members(members:object, plan:bool=False) -> List[object]:
+async def get_fail_members(members:object, channel:object, plan:bool=False) -> List[object]:
     """구글 시트에 체크되지 않은 사람들 확인하는 함수"""
     fail_members = []
     for member in members:
-        col, row = get_cell_location(member.name, plan)
+        col, row, success = get_cell_location(member.name, plan)
+        if success == False:
+            await channel.send("일부 유저의 이름이 변경되어 체크할 위치를 찾을 수 없습니다.😭")
         if has_value_at_cell(col, row) == False:
             fail_members.append(member)
 

@@ -25,7 +25,8 @@ async def time_out(channel:object, fail_members:List[str], plan:bool=False) -> N
 
     success_count = len(MEMBERS) - len(fail_members)
     for fail_member in fail_members:
-        col, row = get_cell_location(fail_member.name, plan)
+        col, row, success = get_cell_location(fail_member.name, plan)
+        if success == False:  return
         WORKSHEET.update_cell(row, col, "X")
     await channel.send(f"---------{month}월{day}일 {success_count}/{len(MEMBER_NAMES)} 완료---------")
 
@@ -37,7 +38,7 @@ if __name__ == "__main__":
 
     @tasks.loop(minutes=1)
     async def every_notice():
-        _, _, weekday, hour, min = get_date()
+        _, _, weekday, _, _ = get_date()
         if weekday in [5, 6]: return
 
         wake_up_channel = client.get_guild(GUILD_ID).get_channel(WAKE_UP_CHANNEL_ID)
@@ -45,19 +46,19 @@ if __name__ == "__main__":
 
         if compare_time(*MORNING_ALARM):
             print("기상 알람")
-            fail_members = check_members(MEMBERS)
+            fail_members = await get_fail_members(MEMBERS, wake_up_channel)
             await alarm(wake_up_channel, fail_members, "일어나세요!!🙈")
         elif compare_time(*PLAN_ALARM):
             print("일일 계획 알람")
-            fail_members = check_members(MEMBERS, True)
+            fail_members = await get_fail_members(MEMBERS, daily_channel, True)
             await alarm(daily_channel, fail_members, "일일계획 작성 부탁드립니다 ✏")
         elif compare_time(*MORNING_TIME_LIMIT):
             print("기상 미션 체크")
-            fail_members = check_members(MEMBERS)
+            fail_members = await get_fail_members(MEMBERS, wake_up_channel)
             await time_out(wake_up_channel, fail_members)
         elif compare_time(*PLAN_TIME_LIMIT):
             print("일일 계획 체크")
-            fail_members = check_members(MEMBERS, True)
+            fail_members = await get_fail_members(MEMBERS, daily_channel, True)
             await time_out(daily_channel, fail_members, True)
 
 
@@ -87,24 +88,28 @@ if __name__ == "__main__":
         if message.author == client.user or weekday == 5: return
 
         if message.content.startswith("!일일"):
-            col, row = get_cell_location(message.author.name, True)
+            col, row, success = get_cell_location(message.author.name, True)
+            if success == False:
+                await message.channel.send("이름이 변경되어 체크할 위치를 찾을 수 없습니다 😭")
+                return
             if (12 == hour and 11 < min) or (12 < hour < 17):
                 return
             elif weekday == 6 or has_value_at_cell(col, row) == True:
                 # 내일 계획 미리 세우는 경우 or 일요일날 계획 세운 경우
                 row += 2
 
-            DAILY_PLAN_MEMBERS.add(message.author)
             WORKSHEET.update_cell(row, col, "O")
             await message.channel.send("일일계획 확인되었습니다. 📚")
 
         elif message.content.startswith('!기상'):
-            col, row = get_cell_location(message.author.name)
+            col, row, success = get_cell_location(message.author.name)
+            if success == False:
+                await message.channel.send("이름이 변경되어 체크할 위치를 찾을 수 없습니다 😭")
+                return
             limit_hour, limit_min = MORNING_TIME_LIMIT
 
             if limit_hour > hour or (limit_hour == hour and limit_min >= min):
                 # 제한 시간안에 인증한 경우
-                WAKE_UP_MEMBERS.add(message.author)
                 WORKSHEET.update_cell(row, col, "O")
                 msg = "기상 확인되었습니다. 오늘도 화이텡! 💪"
             else:
@@ -123,7 +128,10 @@ if __name__ == "__main__":
             await message.channel.send(msg)
 
         elif message.content.startswith("!휴식"):
-            col, row = get_cell_location(message.author.name)
+            col, row, success = get_cell_location(message.author.name)
+            if success == False:
+                await message.channel.send("이름이 변경되어 체크할 위치를 찾을 수 없습니다 😭")
+                return
             location_wake = f"{chr(col+64)}{row+2}"
             location_plan = f"{chr(col+64)}{row+3}"
 
@@ -135,8 +143,6 @@ if __name__ == "__main__":
             WORKSHEET.format(location_wake, format)
             WORKSHEET.format(location_plan, format)
 
-            DAILY_PLAN_MEMBERS.add(message.author)
-            WAKE_UP_MEMBERS.add(message.author)
             await message.channel.send("🔋")
 
 

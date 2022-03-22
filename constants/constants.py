@@ -19,9 +19,7 @@ PLAN_ALARM = [11, 50]
 PLAN_TIME_LIMIT = [12, 1]
 
 
-# 출석 확인 DB
-WAKE_UP_MEMBERS = set()
-DAILY_PLAN_MEMBERS = set()
+# 스터디원 DB
 MEMBERS = []
 
 
@@ -45,6 +43,6 @@ MEMBER_NAMES = {
 "여운화": "여운화",
 "윤우상": "윤우상",
 "choar": "조아라",
-"1. 홍예림": "홍예림",
+"옒이": "홍예림",
 "2. 홍제섭": "홍제섭"
 }
